@@ -5,7 +5,7 @@ find_package(catkin REQUIRED COMPONENTS
   rtmbuild2
   roscpp)
 
-rtmbuild2_init()
+rtmbuild2_init(rtmbuild2)
 
 rtmbuild2_genidl()
 

@@ -4,9 +4,11 @@
 
 https://github.com/start-jsk/rtmros_common/tree/master/rtmbuild
 
-* パッケージをまたいだidlのincludeの対応
-* 関数に関係するstructだけではなく、全てのstructを変換する
-* 別のパッケージで変換したstructは、再度変換するのではなく再利用する
+* idlの継承関係を変換可能
+  * パッケージをまたいだidlのincludeの対応
+  * serviceに関係するstructだけではなく、全てのstructを変換する
+  * rtmbuild2で、openrtm_aistのidlを変換する
+  * 別のパッケージ(`rtmbuild2_init`の引数で指定)で変換したstructは、再度変換するのではなく継承する
 * https://github.com/start-jsk/rtmros_common/issues/1062#issuecomment-1179733095 の実装
 * non exist dependencyを無くしたことで`cmake_policy(SET CMP0046 OLD)`なしでもビルド可能
 * openhrp3への依存なし

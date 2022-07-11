@@ -12,7 +12,7 @@ endmacro(_rtmbuild2_get_idls)
 
 # generate msg/srv files from idl, this will be called in rtmbuild2_init
 macro(_rtmbuild2_genbridge_init)
-  set(_extra_message_dependencies ${ARGV0})
+  set(_extra_message_dependencies ${ARGV})
 
   set(extra_idl_dirs "")
   set(extra_package_paths "")

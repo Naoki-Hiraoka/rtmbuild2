@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8.3)
 
-#set(DEBUG_RTMBUILD2_CMAKE TRUE)
+set(DEBUG_RTMBUILD2_CMAKE TRUE)
 
 ##
 ## GLOBAL VARIABLES
@@ -23,7 +23,7 @@ cmake_minimum_required(VERSION 2.8.3)
 # setup global variables
 #
 macro(rtmbuild2_init)
-  set(_extra_message_dependencies ${ARGV0})
+  set(_extra_message_dependencies ${ARGV})
   #
   # use pkg-config to set --cflags --libs plus rtm-related flags
   #
@@ -36,7 +36,9 @@ macro(rtmbuild2_init)
     message("[rtmbuild2_init] - openrtm_aist_LIBRARIES    -> ${openrtm_aist_LIBRARIES}")
   endif()
 
-  if(EXISTS ${rtmbuild2_SOURCE_PREFIX}) # catkin
+  if(${PROJECT_NAME} STREQUAL rtmbuild2)
+    set(idl2srv_EXECUTABLE ${PROJECT_SOURCE_DIR}/scripts/idl2srv.py)
+  elseif(EXISTS ${rtmbuild2_SOURCE_PREFIX}) # catkin
     set(idl2srv_EXECUTABLE ${rtmbuild2_SOURCE_PREFIX}/scripts/idl2srv.py)
   else()
     pkg_check_modules(rtmbuild rtmbuild REQUIRED)
@@ -103,9 +105,12 @@ macro(rtmbuild2_init)
   message("[rtmbuild2_init] - ${PROJECT_NAME}_autogen_interfaces : ${${PROJECT_NAME}_autogen_interfaces}")
   set(rtmbuild2_${PROJECT_NAME}_autogen_msg_files ${${PROJECT_NAME}_autogen_msg_files}) 
 
-
-  add_message_files(DIRECTORY msg FILES "${${PROJECT_NAME}_autogen_msg_files}")
-  add_service_files(DIRECTORY srv FILES "${${PROJECT_NAME}_autogen_srv_files}")
+  if(${PROJECT_NAME}_autogen_msg_files)
+    add_message_files(DIRECTORY msg FILES "${${PROJECT_NAME}_autogen_msg_files}")
+  endif()
+  if(${PROJECT_NAME}_autogen_srv_files)
+    add_service_files(DIRECTORY srv FILES "${${PROJECT_NAME}_autogen_srv_files}")
+  endif()
   generate_messages(DEPENDENCIES std_msgs ${_extra_message_dependencies})
 
   # since catkin > 0.7.0, the CPATH is no longer being set by catkin, so rtmbuild manually add them
@@ -158,7 +163,7 @@ macro(rtmbuild2_genidl)
     set(_output_skel_cpp ${_output_cpp_dir}/idl/${_idl_name}Skel.cpp)
     set(_output_stub_lib ${_output_lib_dir}/lib${_idl_name}Stub.so)
     set(_output_skel_lib ${_output_lib_dir}/lib${_idl_name}Skel.so)
-    list(APPEND ${PROJECT_NAME}_IDLLIBRARY_DIRS lib${_idl_name}Stub.so lib${_idl_name}Skel.so)
+
     # call the  rule to compile idl
     if(DEBUG_RTMBUILD2_CMAKE)
       message("[rtmbuild2_genidl] ${_output_idl_hh}\n -> ${_idl_file} ${${_idl}_depends}")
@@ -180,9 +185,8 @@ macro(rtmbuild2_genidl)
       COMMAND ${rtm_cxx} ${extra_idlflags} ${rtm_cflags} -I. -shared -o ${_output_skel_lib} ${_output_skel_cpp} ${rtm_libs}
       DEPENDS ${_output_stub_cpp} ${_output_stub_h} ${_output_skel_cpp} ${_output_skel_h})
     list(APPEND ${PROJECT_NAME}_IDLLIBRARY_DIRS ${_output_stub_lib} ${_output_skel_lib})
-    if(use_catkin)
-      install(PROGRAMS ${_output_stub_lib} ${_output_skel_lib} DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION})
-    endif()
+    install(PROGRAMS ${_output_stub_lib} ${_output_skel_lib} DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION})
+
     # python
     list(APPEND _output_idl_py_files ${_output_idl_py})
     # cpp
@@ -210,6 +214,7 @@ macro(rtmbuild2_genidl)
   add_custom_target(RTMBUILD2_${PROJECT_NAME}_genhh DEPENDS ${_output_idl_hh_files})
   add_dependencies(RTMBUILD2_${PROJECT_NAME}_genrpc RTMBUILD2_${PROJECT_NAME}_genhh)
   ##
+  add_custom_target(RTMBUILD2_GENIDL ALL DEPENDS RTMBUILD2_${PROJECT_NAME}_genrpc)
 
   if(_autogen)
     if(DEBUG_RTMBUILD2_CMAKE)

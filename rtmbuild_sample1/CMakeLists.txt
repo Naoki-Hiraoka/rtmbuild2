@@ -7,7 +7,7 @@ find_package(catkin REQUIRED COMPONENTS
   rtmbuild_sample0
   )
 
-rtmbuild2_init(rtmbuild_sample0)
+rtmbuild2_init(rtmbuild_sample0 rtmbuild2)
 
 rtmbuild2_genidl()
 
