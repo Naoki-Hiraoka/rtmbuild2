@@ -1,0 +1,36 @@
+#ifndef RtmBuildSample1Service_idl
+#define RtmBuildSample1Service_idl
+
+#include "RtmBuildSample1Struct.idl"
+#include "rtmbuild_sample0/idl/RtmBuildSample0Service.idl"
+
+module rtmbuild_sample1
+{
+  interface RtmBuildSample1Service
+  {
+
+    struct RtmBuildSample1Struct2
+    {
+      rtmbuild_sample0::RtmBuildSample0Struct0 value0;
+      sequence<rtmbuild_sample0::RtmBuildSample0Struct0> value0s;
+      rtmbuild_sample0::RtmBuildSample0Struct1 value1;
+      sequence<rtmbuild_sample0::RtmBuildSample0Struct1> value1s;
+      rtmbuild_sample0::RtmBuildSample0Service::RtmBuildSample0Struct2 value2;
+      sequence<rtmbuild_sample0::RtmBuildSample0Service::RtmBuildSample0Struct2> value2s;
+    };
+    void setParams00(in rtmbuild_sample0::RtmBuildSample0Struct0 i_param);
+    void getParams00(out rtmbuild_sample0::RtmBuildSample0Struct0 i_param);
+    void setParams01(in rtmbuild_sample0::RtmBuildSample0Struct1 i_param);
+    void getParams01(out rtmbuild_sample0::RtmBuildSample0Struct1 i_param);
+    void setParams02(in rtmbuild_sample0::RtmBuildSample0Service::RtmBuildSample0Struct2 i_param);
+    void getParams02(out rtmbuild_sample0::RtmBuildSample0Service::RtmBuildSample0Struct2 i_param);
+    void setParams10(in RtmBuildSample1Struct0 i_param);
+    void getParams10(out RtmBuildSample1Struct0 i_param);
+    void setParams11(in RtmBuildSample1Struct1 i_param);
+    void getParams11(out RtmBuildSample1Struct1 i_param);
+    void setParams12(in RtmBuildSample1Struct2 i_param);
+    void getParams12(out RtmBuildSample1Struct2 i_param);
+  };
+};
+
+#endif

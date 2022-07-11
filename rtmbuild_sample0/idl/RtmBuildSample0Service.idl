@@ -1,0 +1,29 @@
+#ifndef RtmBuildSample0Service_idl
+#define RtmBuildSample0Service_idl
+
+#include "RtmBuildSample0Struct.idl"
+
+module rtmbuild_sample0
+{
+  interface RtmBuildSample0Service
+  {
+
+    struct RtmBuildSample0Struct2
+    {
+      RTC::Time time;
+      RTC::Pose3D pose3d;
+      string str;
+      boolean flag;
+      double value;
+      sequence<double, 6> values;
+    };
+    void setParams0(in RtmBuildSample0Struct0 i_param);
+    void getParams0(out RtmBuildSample0Struct0 i_param);
+    void setParams1(in RtmBuildSample0Struct1 i_param);
+    void getParams1(out RtmBuildSample0Struct1 i_param);
+    void setParams2(in RtmBuildSample0Struct2 i_param);
+    void getParams2(out RtmBuildSample0Struct2 i_param);
+  };
+};
+
+#endif

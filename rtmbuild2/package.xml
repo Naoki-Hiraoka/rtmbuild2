@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>rtmbuild2</name>
+  <version>0.0.0</version>
+  <description>Build scripts for OpenRTM and OpenHRP</description>
+  <license>BSD</license>
+  <maintainer email="hiraoka@jsk.imi.i.u-tokyo.ac.jp">Naoki-Hiraoka</maintainer>
+  <author email="k-okada@jsk.t.u-tokyo.ac.jp">Kei Okada</author>
+  <author email="saito@jsk.t.u-tokyo.ac.jp">Manabu Saito</author>
+  <author email="hiraoka@jsk.imi.i.u-tokyo.ac.jp">Naoki-Hiraoka</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <exec_depend>message_runtime</exec_depend>
+  <depend>message_generation</depend>
+  <depend>omniorb</depend>
+  <depend>pkg-config</depend>
+  <depend>std_msgs</depend>
+  <depend>cmake_modules</depend>
+  <depend>openrtm_aist</depend>
+  <depend>openrtm_aist_python</depend>
+
+</package>

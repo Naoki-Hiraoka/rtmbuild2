@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>rtmbuild_sample0</name>
+  <version>0.0.0</version>
+  <description>The rtmbuild_sample0 package</description>
+
+  <maintainer email="hiraoka@jsk.imi.i.u-tokyo.ac.jp">hiraoka</maintainer>
+
+  <license>BSD</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <depend>rtmbuild2</depend>
+  <depend>roscpp</depend>
+</package>

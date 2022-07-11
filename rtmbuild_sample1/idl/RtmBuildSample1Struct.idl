@@ -1,0 +1,24 @@
+#ifndef RtmBuildSample1Struct_idl
+#define RtmBuildSample1Struct_idl
+
+#include "rtmbuild_sample0/idl/RtmBuildSample0Struct.idl"
+
+module rtmbuild_sample1
+{
+  struct RtmBuildSample1Struct0
+  {
+    rtmbuild_sample0::RtmBuildSample0Struct0 value0;
+    sequence<rtmbuild_sample0::RtmBuildSample0Struct0> value0s;
+    rtmbuild_sample0::RtmBuildSample0Struct1 value1;
+    sequence<rtmbuild_sample0::RtmBuildSample0Struct1> value1s;
+  };
+
+  struct RtmBuildSample1Struct1
+  {
+    RtmBuildSample1Struct0 value;
+    sequence<RtmBuildSample1Struct0> values;
+  };
+
+};
+
+#endif

@@ -1,0 +1,26 @@
+#ifndef RtmBuildSample0Struct_idl
+#define RtmBuildSample0Struct_idl
+
+#include "ExtendedDataTypes.idl" // openrtm
+
+module rtmbuild_sample0
+{
+  struct RtmBuildSample0Struct0
+  {
+    RTC::Time time;
+    RTC::Pose3D pose3d;
+    string str;
+    boolean flag;
+    double value;
+    sequence<double, 6> values;
+  };
+
+  struct RtmBuildSample0Struct1
+  {
+    RtmBuildSample0Struct0 value;
+    sequence<RtmBuildSample0Struct0> values;
+  };
+
+};
+
+#endif
