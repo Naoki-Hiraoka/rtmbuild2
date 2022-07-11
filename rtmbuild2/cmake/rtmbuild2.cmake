@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8.3)
 
-set(DEBUG_RTMBUILD2_CMAKE TRUE)
+#set(DEBUG_RTMBUILD2_CMAKE TRUE)
 
 ##
 ## GLOBAL VARIABLES
@@ -256,7 +256,7 @@ macro(rtmbuild2_genbridge)
   ##                                    -> RTMBUILD2_${PROJECT_NAME}_genrpc
   ## ${exe}                             -> RTMBUILD2_${PROJECT_NAME}_genbridge
 
-  add_dependencies(RTMBUILD2_${PROJECT_NAME}_gencpp RTMBUILD2_${PROJECT_NAME}_genidl ROSBUILD_genmsg_cpp ${PROJECT_NAME}_generate_messages_cpp ${PROJECT_NAME}_generate_messages_py)
+  add_dependencies(RTMBUILD2_${PROJECT_NAME}_gencpp ${PROJECT_NAME}_generate_messages_cpp ${PROJECT_NAME}_generate_messages_py)
   add_dependencies(RTMBUILD2_${PROJECT_NAME}_genrpc RTMBUILD2_${PROJECT_NAME}_gencpp)
   add_dependencies(RTMBUILD2_${PROJECT_NAME}_genbridge RTMBUILD2_${PROJECT_NAME}_genrpc)
 
