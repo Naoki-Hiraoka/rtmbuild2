@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8.3)
 
-#set(DEBUG_RTMBUILD2_CMAKE TRUE)
+set(DEBUG_RTMBUILD2_CMAKE TRUE)
 
 ##
 ## GLOBAL VARIABLES
@@ -74,11 +74,9 @@ macro(rtmbuild2_init)
   separate_arguments(rtm_cflags)
   separate_arguments(rtm_libs)
   set(rtm_cxx "c++") ## openrtm-aist --variable=rtm_cxx sometimes returns /usr/lib/ccache/c++
-  set(extra_idl_dirs "")
   set(extra_idlflags "")
   foreach(_extra_message_dependency ${_extra_message_dependencies})
     foreach(_extra_idldir ${${_extra_message_dependency}_INCLUDE_DIRS})
-      set(extra_idl_dirs "${extra_idl_dirs} ${_extra_idldir}")
       list(APPEND extra_idlflags -I${_extra_idldir})
     endforeach()
   endforeach()
@@ -89,7 +87,7 @@ macro(rtmbuild2_init)
   message("[rtmbuild2_init] - rtm_cflags             -> ${rtm_cflags}")
   message("[rtmbuild2_init] - rtm_libs               -> ${rtm_libs}")
   message("[rtmbuild2_init] - hrp_idldir             -> ${hrp_idldir}")
-  message("[rtmbuild2_init] - extra_idl_dirs         -> ${extra_idl_dirs}")
+  message("[rtmbuild2_init] - extra_message_dependencies -> ${_extra_message_dependencies}")
   message("[rtmbuild2_init] - extra_idlflags         -> ${extra_idlflags}")
 
   ##
@@ -105,7 +103,7 @@ macro(rtmbuild2_init)
   ## generate msg/srv/cpp from idl
   set(${PROJECT_NAME}_autogen_msg_files "")
   set(${PROJECT_NAME}_autogen_srv_files "")
-  _rtmbuild2_genbridge_init(${extra_idl_dirs})
+  _rtmbuild2_genbridge_init(${_extra_message_dependencies})
   message("[rtmbuild2_init] - ${PROJECT_NAME}_autogen_msg_files  : ${${PROJECT_NAME}_autogen_msg_files}")
   message("[rtmbuild2_init] - ${PROJECT_NAME}_autogen_srv_files  : ${${PROJECT_NAME}_autogen_srv_files}")
   message("[rtmbuild2_init] - ${PROJECT_NAME}_autogen_interfaces : ${${PROJECT_NAME}_autogen_interfaces}")

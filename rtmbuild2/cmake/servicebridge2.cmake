@@ -12,7 +12,26 @@ endmacro(_rtmbuild2_get_idls)
 
 # generate msg/srv files from idl, this will be called in rtmbuild2_init
 macro(_rtmbuild2_genbridge_init)
-  set(_extra_idl_dirs ${ARGV0})
+  set(_extra_message_dependencies ${ARGV0})
+
+  set(extra_idl_dirs "")
+  set(extra_package_paths "")
+  foreach(_extra_message_dependency ${_extra_message_dependencies})
+    foreach(_extra_idldir ${${_extra_message_dependency}_INCLUDE_DIRS})
+      set(extra_idl_dirs "${extra_idl_dirs} ${_extra_idldir}")
+    endforeach()
+    if(EXISTS ${${_extra_message_dependency}_SOURCE_PREFIX})
+      set(extra_package_paths "${extra_package_paths} ${${_extra_message_dependency}_SOURCE_PREFIX}")
+    elseif(EXISTS ${${_extra_message_dependency}_PREFIX}/share/${_extra_message_dependency})
+      set(extra_package_paths "${extra_package_paths} ${${_extra_message_dependency}_PREFIX}/share/${_extra_message_dependency}")
+    else()
+      message(ERROR "${_extra_message_dependency} not found")
+    endif()
+  endforeach()
+  if(DEBUG_RTMBUILD2_CMAKE)
+    message("[_rtmbuild2_genbridge_init] - extra_idl_dirs      -> ${extra_idl_dirs}")
+    message("[_rtmbuild2_genbridge_init] - extra_package_paths -> ${extra_package_paths}")
+  endif()
 
   set(_autogen "")
 
@@ -33,11 +52,11 @@ macro(_rtmbuild2_genbridge_init)
     ## gen cpp/msg/srv filenames from idl and store filename to _autogen_files
     if(DEBUG_RTMBUILD2_CMAKE)
       message("[_rtmbuild2_genbridge_init] Get msgs/srvs filenames from ${_idl_file}")
-      message("[_rtmbuild2_genbridge_init] running\n>> ${idl2srv_EXECUTABLE} -i ${_idl_file} --include-dirs=\"${idl_dirs}\" --package-name=${PROJECT_NAME} --tmpdir=/tmp/idl2srv_${PROJECT_NAME}_${_idl_name}_${_rand_str}")
+      message("[_rtmbuild2_genbridge_init] running\n>> ${idl2srv_EXECUTABLE} -i ${_idl_file} --include-dirs=\"${idl_dirs}\" --package-name=${PROJECT_NAME} --tmpdir=/tmp/idl2srv_${PROJECT_NAME}_${_idl_name}_${_rand_str} --include-msgsrv-package-paths=\"${extra_package_paths}\"")
     endif()
     ##
     set(${PROJECT_NAME}_autogen_files "")
-    execute_process(COMMAND ${idl2srv_EXECUTABLE} -i ${_idl_file} --include-dirs="${idl_dirs}" --package-name=${PROJECT_NAME} --tmpdir=/tmp/idl2srv_${PROJECT_NAME}_${_idl_name}_${_rand_str} OUTPUT_VARIABLE ${PROJECT_NAME}_autogen_files OUTPUT_STRIP_TRAILING_WHITESPACE RESULT_VARIABLE _idl2srv_failed ERROR_VARIABLE _idl2srv_error)
+    execute_process(COMMAND ${idl2srv_EXECUTABLE} -i ${_idl_file} --include-dirs="${idl_dirs}" --package-name=${PROJECT_NAME} --tmpdir=/tmp/idl2srv_${PROJECT_NAME}_${_idl_name}_${_rand_str} --include-msgsrv-package-paths="${extra_package_paths}" OUTPUT_VARIABLE ${PROJECT_NAME}_autogen_files OUTPUT_STRIP_TRAILING_WHITESPACE RESULT_VARIABLE _idl2srv_failed ERROR_VARIABLE _idl2srv_error)
     if(DEBUG_RTMBUILD2_CMAKE)
       message("[_rtmbuild2_genbridge_init] ${idl2srv_EXECUTABLE} returned ${_idl2srv_failed} (stdout:${${PROJECT_NAME}_autogen_files}, stderr:${_idl2srv_error})")
       message("[_rtmbuild2_genbridge_init] ${PROJECT_NAME}_autogen_files : ${${PROJECT_NAME}_autogen_files}")
@@ -93,10 +112,13 @@ macro(_rtmbuild2_genbridge_init)
       list(APPEND ${PROJECT_NAME}_autogen_interfaces ${${PROJECT_NAME}_${_idl_name}_autogen_interfaces})
 
       # add custom command for nexttime you invoke make
-      separate_arguments(tmp_idl_dirs UNIX_COMMAND "${idl_dirs}") # We need to use separate_arguments fot add_custom_target's arguments
-      add_custom_command(OUTPUT ${${PROJECT_NAME}_${_idl_name}_autogen_cpp_files}
-        COMMAND ${idl2srv_EXECUTABLE} -i ${_idl_file} --include-dirs="${tmp_idl_dirs}" --package-name=${PROJECT_NAME} --tmpdir=/tmp/idl2srv_${PROJECT_NAME}_${_idl_name}_${_rand_str}
-        DEPENDS ${_idl_file})
+      if( ${PROJECT_NAME}_${_idl_name}_autogen_cpp_files )
+        separate_arguments(tmp_idl_dirs UNIX_COMMAND "${idl_dirs}") # We need to use separate_arguments fot add_custom_target's arguments
+        add_custom_command(OUTPUT ${${PROJECT_NAME}_${_idl_name}_autogen_cpp_files}
+          COMMAND ${idl2srv_EXECUTABLE} -i ${_idl_file} --include-dirs="${tmp_idl_dirs}" --package-name=${PROJECT_NAME} --tmpdir=/tmp/idl2srv_${PROJECT_NAME}_${_idl_name}_${_rand_str} --include-msgsrv-package-paths="${extra_package_paths}"
+          DEPENDS ${_idl_file})
+      endif()
+
       list(APPEND _autogen /tmp/idl2srv_${PROJECT_NAME}_${_idl_name}_${_rand_str})
 
     endif( ${PROJECT_NAME}_autogen_files ) 

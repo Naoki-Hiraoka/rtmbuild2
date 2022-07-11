@@ -147,6 +147,10 @@ class ServiceVisitor (idlvisitor.AstVisitor):
     def visitModule(self, node):
         for n in node.definitions():
             n.accept(self)
+    def visitStruct(self, node):
+        self.outputMsg(node)
+        for n in node.members():
+            n.accept(self)
     def visitInterface(self, node):
         self.outputMsg(node)
         for c in node.contents():
@@ -158,9 +162,7 @@ class ServiceVisitor (idlvisitor.AstVisitor):
         if node.mainFile():
             self.outputSrv(node)
             for n in node.parameters():
-                self.outputMsg(n.paramType())
                 n.accept(self)
-            self.outputMsg(node.returnType())
 ##
 ##
 ##
@@ -264,16 +266,15 @@ class ServiceVisitor (idlvisitor.AstVisitor):
     # output .msg file defined in .idl
     def outputMsg(self, typ):
         if typ in self.generated_msgs:
-            return
-        elif isinstance(typ, idlast.Struct):
-            for mem in typ.members():
-                self.outputMsg(mem.memberType())
-            self.generated_msgs += [typ]
-        elif isinstance(typ, idlast.Enum) or \
-           isinstance(typ, idlast.Interface):
-            self.generated_msgs += [typ]
+            return self.getROSTypeText(typ)
+        elif isinstance(typ, idlast.Struct) or \
+             isinstance(typ, idlast.Enum) or \
+             isinstance(typ, idlast.Interface):
+            pass
         elif isinstance(typ, idltype.Sequence):
-            return self.outputMsg(typ.seqType())
+            msgtype = self.outputMsg(typ.seqType())
+            size = typ.bound()
+            return msgtype + ('[]' if size==0 else '[%d]' % size)
         elif isinstance(typ, idltype.Declared):
             return self.outputMsg(typ.decl())
         elif isinstance(typ, idlast.Typedef):
@@ -283,17 +284,28 @@ class ServiceVisitor (idlvisitor.AstVisitor):
         elif isinstance(typ, idlast.Forward):
             return self.outputMsg(typ.fullDecl())
         else:
-            return
+            return self.getROSTypeText(typ)
 
-        msgfile = basedir + "/msg/" + self.getCppTypeText(typ,full=ROS_FULL) + ".msg"
+        # if msg is defined in a parent package, reuse this.
+        msgtype = self.getROSTypeText(typ)
+        msgfile = self.getCppTypeText(typ,full=ROS_FULL) + ".msg"
+        for packagepath in msgsrvpackagepath:
+            filename = packagepath + "/msg/" + msgfile
+            if os.path.exists(filename):
+                packagename = os.path.split(packagepath)[1]
+                return packagename + "/" + msgtype
+
+        msgfile = basedir + "/msg/" + msgfile
+        self.generated_msgs += [typ]
         if not os.path.exists(basedir):
-            return
+            exit
         print(msgfile)
+
         if options.filenames:
-            return
+            return msgtype
 
         if os.path.exists(msgfile) and (os.stat(msgfile).st_mtime > os.stat(idlfile).st_mtime) and not options.overwrite:
-            return # do not overwrite
+            return msgtype # do not overwrite
 
         os.system('mkdir -p %s/msg' % basedir)
         print("[idl2srv] writing "+msgfile+"....", file=sys.stderr)
@@ -303,19 +315,20 @@ class ServiceVisitor (idlvisitor.AstVisitor):
                 fd.write("%s %s=%d\n" % (self.getROSTypeText(typ), val.identifier(), val.value()))
         elif isinstance(typ, idlast.Struct):
             for mem in typ.members():
-                fd.write(self.getROSTypeText(mem.memberType()) + " " + mem.declarators()[0].identifier() + "\n")
+                typename = self.outputMsg(mem.memberType())
+                fd.write(typename + " " + mem.declarators()[0].identifier() + "\n")
         elif isinstance(typ, idlast.Interface):
             for mem in typ.contents():
                 if isinstance(mem, idlast.Const):
                     fd.write("%s %s=%s\n" % (self.getROSTypeText(mem), mem.identifier(), mem.value()))
         fd.close()
+        return msgtype
 
     # output .srv file defined in .idl
     def outputSrv(self, op):
-
         srvfile = basedir + "/srv/" + self.getCppTypeText(op,full=ROS_FULL) + ".srv"
         if not os.path.exists(basedir):
-            return
+            exit
         print(srvfile)
         if options.filenames:
             return
@@ -328,12 +341,15 @@ class ServiceVisitor (idlvisitor.AstVisitor):
         print("[idl2srv] writing "+srvfile+"....", file=sys.stderr)
         fd = open(srvfile, 'w')
         for arg in [arg for arg in args if arg.is_in()]:
-            fd.write("%s %s\n" % (self.getROSTypeText(arg.paramType()), arg.identifier()))
+            typename = self.outputMsg(arg.paramType())
+            fd.write("%s %s\n" % (typename, arg.identifier()))
         fd.write("---\n")
         if not op.oneway() and op.returnType().kind() != idltype.tk_void:
-            fd.write("%s operation_return\n" % self.getROSTypeText(op.returnType()))
+            typename = self.outputMsg(op.returnType())
+            fd.write("%s operation_return\n" % typename)
         for arg in [arg for arg in args if arg.is_out()]:
-            fd.write("%s %s\n" % (self.getROSTypeText(arg.paramType()), arg.identifier()))
+            typename = self.outputMsg(arg.paramType())
+            fd.write("%s %s\n" % (typename, arg.identifier()))
         fd.close()
 
     def convertFunctionCode(self, interface):
@@ -350,13 +366,21 @@ class ServiceVisitor (idlvisitor.AstVisitor):
             if not isinstance(typ, idlast.Struct):
                 continue
 
-            code += 'template<> void convert(%s& in, %s::%s& out){\n' % (self.getCppTypeText(typ, full=CPP_FULL), pkgname, self.getCppTypeText(typ,full=ROS_FULL))
+            namespace = pkgname
+            msgfile = self.getCppTypeText(typ,full=ROS_FULL) + ".msg"
+            for packagepath in msgsrvpackagepath:
+                filename = packagepath + "/msg/" + msgfile
+                if os.path.exists(filename):
+                    namespace = os.path.split(packagepath)[1]
+                    break
+
+            code += 'template<> void convert(%s& in, %s::%s& out){\n' % (self.getCppTypeText(typ, full=CPP_FULL), namespace, self.getCppTypeText(typ,full=ROS_FULL))
             for mem in typ.members():
                 var = mem.declarators()[0].identifier()
                 code += '  convert(in.%s, out.%s);\n' % (var, var)
             code += '}\n'
 
-            code += 'template<> void convert(%s::%s& in, %s& out){\n' % (pkgname, self.getCppTypeText(typ,full=ROS_FULL), self.getCppTypeText(typ, full=CPP_FULL))
+            code += 'template<> void convert(%s::%s& in, %s& out){\n' % (namespace, self.getCppTypeText(typ,full=ROS_FULL), self.getCppTypeText(typ, full=CPP_FULL))
             for mem in typ.members():
                 var = mem.declarators()[0].identifier()
                 code += '  convert(in.%s, out.%s);\n' % (var, var)
@@ -661,7 +685,7 @@ class InterfaceNameVisitor (idlvisitor.AstVisitor):
 
 
 if __name__ == '__main__':
-    global options, basedir, pkgname, tmpdir
+    global options, basedir, pkgname, tmpdir, msgsrvpackagepath
 
     parser = OptionParser()
     parser.add_option("-i", "--idl", dest="idlfile",
@@ -683,6 +707,8 @@ if __name__ == '__main__':
     parser.add_option("--tmpdir", action="store", type="string",
                       dest="tmpdir", default="/tmp/idl2srv",
                       help="tmporary directory")
+    parser.add_option("--include-msgsrv-package-paths", dest="msgsrvpath", metavar="PATHLIST",
+                      help="list of directories to check msg/srv include")
     (options, args) = parser.parse_args()
 
     idlfile = options.idlfile
@@ -703,6 +729,12 @@ if __name__ == '__main__':
         option = ' '.join(['-I'+d for d in filter(None, pathlist.split(' '))])
     else:
         option = ''
+
+    if options.msgsrvpath:
+        pathlist = options.msgsrvpath.strip('"')
+        msgsrvpackagepath = pathlist.split(' ')
+    else:
+        msgsrvpackagepath = []
 
     fd = os.popen('/usr/bin/omnicpp %s "%s"' % (option, idlfile), 'r')
     try:

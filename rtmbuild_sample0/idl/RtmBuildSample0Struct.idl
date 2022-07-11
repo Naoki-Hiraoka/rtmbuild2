@@ -21,6 +21,22 @@ module rtmbuild_sample0
     sequence<RtmBuildSample0Struct0> values;
   };
 
+  struct RtmBuildSample0Struct3
+  {
+    RTC::Time time;
+    RTC::Pose3D pose3d;
+    string str;
+    boolean flag;
+    double value;
+    sequence<double, 6> values;
+  };
+
+  struct RtmBuildSample0Struct4
+  {
+    RtmBuildSample0Struct3 value;
+    sequence<RtmBuildSample0Struct3> values;
+  };
+
 };
 
 #endif

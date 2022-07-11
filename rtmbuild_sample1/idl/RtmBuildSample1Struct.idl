@@ -11,6 +11,10 @@ module rtmbuild_sample1
     sequence<rtmbuild_sample0::RtmBuildSample0Struct0> value0s;
     rtmbuild_sample0::RtmBuildSample0Struct1 value1;
     sequence<rtmbuild_sample0::RtmBuildSample0Struct1> value1s;
+    rtmbuild_sample0::RtmBuildSample0Struct3 value3;
+    sequence<rtmbuild_sample0::RtmBuildSample0Struct3> value3s;
+    rtmbuild_sample0::RtmBuildSample0Struct4 value4;
+    sequence<rtmbuild_sample0::RtmBuildSample0Struct4> value4s;
   };
 
   struct RtmBuildSample1Struct1
