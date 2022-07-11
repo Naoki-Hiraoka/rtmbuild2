@@ -10,6 +10,7 @@ https://github.com/start-jsk/rtmros_common/tree/master/rtmbuild
 * https://github.com/start-jsk/rtmros_common/issues/1062#issuecomment-1179733095 の実装
 * non exist dependencyを無くしたことで`cmake_policy(SET CMP0046 OLD)`なしでもビルド可能
 * openhrp3への依存なし
+* rosbuildへの互換性なし
 
 ## future work
 
