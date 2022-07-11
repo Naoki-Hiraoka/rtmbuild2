@@ -7,8 +7,6 @@ cmake_minimum_required(VERSION 2.8.3)
 ##
 ## openrtm_aist_INCLUDE_DIRS
 ## openrtm_aist_LIBRARIES
-## openhrp3_INCLUDE_DIRS
-## openhrp3_LIBRARIES
 ## idl2srv_EXECUTABLE
 ## rtmskel_EXECUTABLE
 ## ${PROJECT_NAME}_idl_files
@@ -31,14 +29,11 @@ macro(rtmbuild2_init)
   #
   find_package(PkgConfig)
   pkg_check_modules(openrtm_aist openrtm-aist REQUIRED)
-  pkg_check_modules(openhrp3 openhrp3.1)
   message("[rtmbuild2_init] Building package ${CMAKE_SOURCE_DIR} ${PROJECT_NAME}")
   message("[rtmbuild2_init] - CATKIN_TOPLEVEL = ${CATKIN_TOPLEVEL}")
   if(DEBUG_RTMBUILD2_CMAKE)
     message("[rtmbuild2_init] - openrtm_aist_INCLUDE_DIRS -> ${openrtm_aist_INCLUDE_DIRS}")
     message("[rtmbuild2_init] - openrtm_aist_LIBRARIES    -> ${openrtm_aist_LIBRARIES}")
-    message("[rtmbuild2_init] - openhrp3_INCLUDE_DIRS -> ${openhrp3_INCLUDE_DIRS}")
-    message("[rtmbuild2_init] - openhrp3_LIBRARIES    -> ${openhrp3_LIBRARIES}")
   endif()
 
   if(EXISTS ${rtmbuild2_SOURCE_PREFIX}) # catkin
@@ -69,7 +64,6 @@ macro(rtmbuild2_init)
   execute_process(COMMAND pkg-config openrtm-aist --variable=rtm_cxx      OUTPUT_VARIABLE rtm_cxx      OUTPUT_STRIP_TRAILING_WHITESPACE)
   execute_process(COMMAND pkg-config openrtm-aist --variable=rtm_cflags   OUTPUT_VARIABLE rtm_cflags   OUTPUT_STRIP_TRAILING_WHITESPACE)
   execute_process(COMMAND pkg-config openrtm-aist --variable=rtm_libs     OUTPUT_VARIABLE rtm_libs     OUTPUT_STRIP_TRAILING_WHITESPACE)
-  execute_process(COMMAND pkg-config openhrp3.1   --variable=idl_dir      OUTPUT_VARIABLE hrp_idldir   OUTPUT_STRIP_TRAILING_WHITESPACE)
   separate_arguments(rtm_idlflags)
   separate_arguments(rtm_cflags)
   separate_arguments(rtm_libs)
@@ -115,15 +109,13 @@ macro(rtmbuild2_init)
   generate_messages(DEPENDENCIES std_msgs ${_extra_message_dependencies})
 
   # since catkin > 0.7.0, the CPATH is no longer being set by catkin, so rtmbuild manually add them
+  # https://github.com/start-jsk/rtmros_common/issues/1062
   set(_cmake_prefix_path_tmp $ENV{CMAKE_PREFIX_PATH})
   string(REPLACE ":" ";" _cmake_prefix_path_tmp ${_cmake_prefix_path_tmp})
   foreach(_cmake_prefix_path ${_cmake_prefix_path_tmp})
     include_directories(${_cmake_prefix_path}/include)
     link_directories(${_cmake_prefix_path}/lib)
   endforeach()
-
-  include_directories(${openhrp3_INCLUDE_DIRS} ${openrtm_aist_INCLUDE_DIRS} ${catkin_INCLUDE_DIRS})
-  link_directories(${openhrp3_LIBRARY_DIRS} ${openrtm_aist_LIBRARY_DIRS} ${catkin_LIBRARY_DIRS})
 
 endmacro(rtmbuild2_init)
 
@@ -141,7 +133,6 @@ macro(rtmbuild2_genidl)
   set(_output_idl_hh_files "")
   file(MAKE_DIRECTORY ${_output_cpp_dir}/idl)
   file(MAKE_DIRECTORY ${_output_lib_dir})
-  link_directories(${_output_lib_dir})
 
   message("[rtmbuild2_genidl] - _output_cpp_dir : ${_output_cpp_dir}")
   message("[rtmbuild2_genidl] - _output_lib_dir : ${_output_lib_dir}")
@@ -242,7 +233,20 @@ macro(rtmbuild2_genbridge)
   endif()
   foreach(_comp ${${PROJECT_NAME}_autogen_interfaces})
     message("[rtmbuild2_genbridge] - rtmbuild2_add_executable : ${_comp}ROSBridgeComp")
-    rtmbuild2_add_executable("${_comp}ROSBridgeComp" "src_gen/${_comp}ROSBridge.cpp" "src_gen/${_comp}ROSBridgeComp.cpp")
+    add_executable(${_comp}ROSBridgeComp src_gen/${_comp}ROSBridge.cpp src_gen/${_comp}ROSBridgeComp.cpp)
+    install(TARGETS ${_comp}ROSBridgeComp RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+    ## disable -Wdeprecated to shorten the log data
+    ## ^~~~~
+    ## /opt/ros/melodic/include/openrtm-1.1/rtm/PeriodicExecutionContext.h:633:7: warning: dynamic exception specifications are deprecated in C++11 [-Wdeprecated]
+    ## throw (CORBA::SystemException);
+    ## ^~~~~
+    ## The job exceeded the maximum log length, and has been terminated.
+    set_target_properties(${_comp}ROSBridgeComp PROPERTIES COMPILE_FLAGS "-Wno-deprecated")
+    ##
+    add_dependencies(${_comp}ROSBridgeComp RTMBUILD2_${PROJECT_NAME}_genbridge ${${_package}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS} )
+    target_include_directories(${_comp}ROSBridgeComp PUBLIC ${openrtm_aist_INCLUDE_DIRS} ${catkin_INCLUDE_DIRS})
+    target_link_libraries(${_comp}ROSBridgeComp ${${PROJECT_NAME}_IDLLIBRARY_DIRS} ${openrtm_aist_LIBRARIES} ${catkin_LIBRARIES}  )
+
     add_custom_target(RTMBUILD2_${PROJECT_NAME}_${_comp}_genbridge DEPENDS src_gen/${_comp}ROSBridge.cpp src_gen/${_comp}ROSBridgeComp.cpp)
     add_dependencies(RTMBUILD2_${PROJECT_NAME}_genbridge RTMBUILD2_${PROJECT_NAME}_${_comp}_genbridge)
   endforeach(_comp)
@@ -261,25 +265,3 @@ macro(rtmbuild2_genbridge)
   add_dependencies(RTMBUILD2_${PROJECT_NAME}_genbridge RTMBUILD2_${PROJECT_NAME}_genrpc)
 
 endmacro(rtmbuild2_genbridge)
-
-macro(rtmbuild2_add_executable exe)
-  add_executable(${ARGV})
-  install(TARGETS ${exe} RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
-  ## disable -Wdeprecated to shorten the log data
-  ## ^~~~~
-  ## /opt/ros/melodic/include/openrtm-1.1/rtm/PeriodicExecutionContext.h:633:7: warning: dynamic exception specifications are deprecated in C++11 [-Wdeprecated]
-  ## throw (CORBA::SystemException);
-  ## ^~~~~
-  ## The job exceeded the maximum log length, and has been terminated.
-  set_target_properties(${exe} PROPERTIES COMPILE_FLAGS "-Wno-deprecated")
-  ##
-  add_dependencies(${exe} RTMBUILD2_${PROJECT_NAME}_genbridge ${${_package}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS} )
-  target_link_libraries(${exe} ${openhrp3_LIBRARIES} ${${PROJECT_NAME}_IDLLIBRARY_DIRS} ${openrtm_aist_LIBRARIES} ${catkin_LIBRARIES}  )
-endmacro(rtmbuild2_add_executable)
-
-macro(rtmbuild2_add_library lib)
-  add_library(${ARGV})
-  install(TARGETS ${LIB} LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION})
-  target_link_libraries(${lib}  ${openhrp3_LIBRARIES} ${openrtm_aist_LIBRARIES} ${${PROJECT_NAME}_IDLLIBRARY_DIRS})
-endmacro(rtmbuild2_add_library)
-
