@@ -23,3 +23,7 @@ https://github.com/start-jsk/rtmros_common/tree/master/rtmbuild
   * 例えば、RTC::TimeをROSのtimeに変換する. Bridgeでusecとnsecを変換する.
   * 例えば、RTC::TimedPose3Dをgeometry_msgs::PoseStampedに変換する. Bridgeでrpyとquaternionを変換する.
 * idl->msg/srvはあるが、msg/srv->idlが欲しい
+
+## links
+
+* https://omniorb.sourceforge.io/omni41/omniidl.html
