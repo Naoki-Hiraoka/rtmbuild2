@@ -15,6 +15,8 @@ module rtmbuild_sample1
     sequence<rtmbuild_sample0::RtmBuildSample0Struct3> value3s;
     rtmbuild_sample0::RtmBuildSample0Struct4 value4;
     sequence<rtmbuild_sample0::RtmBuildSample0Struct4> value4s;
+
+    rtmbuild_sample0::JointControlMode mode;
   };
 
   struct RtmBuildSample1Struct1

@@ -5,6 +5,11 @@
 
 module rtmbuild_sample0
 {
+  typedef sequence<double, 6> DblSequence6;
+  typedef double DblArray6[6];
+
+  enum JointControlMode {FREE, POSITION, TORQUE, VELOCITY, POSITION_TORQUE};
+
   struct RtmBuildSample0Struct0
   {
     RTC::Time time;
@@ -13,6 +18,10 @@ module rtmbuild_sample0
     boolean flag;
     double value;
     sequence<double, 6> values;
+    DblSequence6 values2;
+    DblArray6 values3;
+    sequence<DblSequence6> valuesseq;
+    JointControlMode mode;
   };
 
   struct RtmBuildSample0Struct1

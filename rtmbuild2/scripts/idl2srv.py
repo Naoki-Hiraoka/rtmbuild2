@@ -207,6 +207,30 @@ class ServiceVisitor (idlvisitor.AstVisitor):
 
         return 'undefined'
 
+    def getDimension(self, typ):
+        if isinstance(typ, idltype.Sequence):
+            etype = typ.seqType() # n-dimensional array -> 1-dimensional
+            size = typ.bound()
+            dim = 1
+            while not (isinstance(etype, idltype.Base) or isinstance(etype, idltype.String) or isinstance(etype, idltype.WString) or isinstance(etype, idlast.Struct) or isinstance(etype, idlast.Interface) or isinstance(etype, idlast.Enum) or isinstance(etype, idlast.Forward)):
+                if isinstance(etype, idltype.Declared):
+                    etype = etype.decl()
+                elif isinstance(etype, idltype.Sequence):
+                    dim += 1
+                    etype = etype.seqType()
+                elif isinstance(etype, idlast.Typedef):
+                    arrsize = [size] + etype.declarators()[0].sizes()
+                    if(len(arrsize) != 1): dim += 1
+                    etype = etype.aliasType()
+                elif isinstance(etype, idlast.Declarator):
+                    etype = etype.alias()
+#                elif isinstance(etype, idlast.Forward):
+#                    etype = etype.fullDecl()
+                else:
+                    return 'undefined'
+            return dim
+        else:
+            return 0
 
     def getROSTypeText(self, typ):
         if isinstance(typ, idltype.Base):
@@ -241,10 +265,16 @@ class ServiceVisitor (idlvisitor.AstVisitor):
         if isinstance(typ, idltype.Declared):
             return self.getROSTypeText(typ.decl())
 
-        if isinstance(typ, idlast.Interface):
-            return '_'.join(typ.scopedName())
-        if isinstance(typ, idlast.Struct):
-            return '_'.join(typ.scopedName())
+        if isinstance(typ, idlast.Interface) or \
+           isinstance(typ, idlast.Struct):
+            msgtype = '_'.join(typ.scopedName())
+            msgfile = self.getCppTypeText(typ,full=ROS_FULL) + ".msg"
+            for packagepath in msgsrvpackagepath:
+                filename = packagepath + "/msg/" + msgfile
+                if os.path.exists(filename):
+                    packagename = os.path.split(packagepath)[1]
+                    return packagename + "/" + msgtype
+            return msgtype
         if isinstance(typ, idlast.Const):
             return TypeNameMap[typ.constKind()]
         if isinstance(typ, idlast.Enum):
@@ -272,13 +302,14 @@ class ServiceVisitor (idlvisitor.AstVisitor):
              isinstance(typ, idlast.Interface):
             pass
         elif isinstance(typ, idltype.Sequence):
-            msgtype = self.outputMsg(typ.seqType())
-            size = typ.bound()
-            return msgtype + ('[]' if size==0 else '[%d]' % size)
+            if self.getDimension(typ) <= 1:
+                msgtype = self.outputMsg(typ.seqType())
+                size = typ.bound()
+                return msgtype + ('[]' if size==0 else '[%d]' % size)
+            else:
+                return self.getROSTypeText(typ)
         elif isinstance(typ, idltype.Declared):
             return self.outputMsg(typ.decl())
-        elif isinstance(typ, idlast.Typedef):
-            return self.outputMsg(typ.aliasType())
         elif isinstance(typ, idlast.Declarator):
             return self.outputMsg(typ.alias())
         elif isinstance(typ, idlast.Forward):
@@ -292,8 +323,7 @@ class ServiceVisitor (idlvisitor.AstVisitor):
         for packagepath in msgsrvpackagepath:
             filename = packagepath + "/msg/" + msgfile
             if os.path.exists(filename):
-                packagename = os.path.split(packagepath)[1]
-                return packagename + "/" + msgtype
+                return msgtype
 
         msgfile = basedir + "/msg/" + msgfile
         self.generated_msgs += [typ]
@@ -301,10 +331,7 @@ class ServiceVisitor (idlvisitor.AstVisitor):
             exit
         print(msgfile)
 
-        if options.filenames:
-            return msgtype
-
-        if os.path.exists(msgfile) and (os.stat(msgfile).st_mtime > os.stat(idlfile).st_mtime) and not options.overwrite:
+        if os.path.exists(msgfile) and (os.stat(msgfile).st_mtime > os.stat(idlfile).st_mtime):
             return msgtype # do not overwrite
 
         os.system('mkdir -p %s/msg' % basedir)
@@ -330,10 +357,8 @@ class ServiceVisitor (idlvisitor.AstVisitor):
         if not os.path.exists(basedir):
             exit
         print(srvfile)
-        if options.filenames:
-            return
 
-        if os.path.exists(srvfile) and (os.stat(srvfile).st_mtime > os.stat(idlfile).st_mtime) and not options.overwrite:
+        if os.path.exists(srvfile) and (os.stat(srvfile).st_mtime > os.stat(idlfile).st_mtime):
             return # do not overwrite
         os.system('mkdir -p %s/srv' % basedir)
         args = op.parameters()
@@ -500,10 +525,8 @@ class ServiceVisitor (idlvisitor.AstVisitor):
         print(Comp_cpp)
         print(mod_cpp)
         print(mod_h)
-        if options.filenames:
-            return
 
-        if all([ os.path.exists(x) and os.stat(x).st_mtime > os.stat(idlfile).st_mtime for x in [Comp_cpp, mod_cpp, mod_h]]) and not options.overwrite:
+        if all([ os.path.exists(x) and os.stat(x).st_mtime > os.stat(idlfile).st_mtime for x in [Comp_cpp, mod_cpp, mod_h]]):
             return # do not overwrite
 
         # check if rtc-template exists under `rospack find openrtm_aist`/bin, otherwise use openrtm_aist_PREFIX/lib/openrtm_aist/bin
@@ -692,12 +715,6 @@ if __name__ == '__main__':
                       help="target idl file", metavar="FILE")
     parser.add_option("-I", "--include-dirs", dest="idlpath", metavar="PATHLIST",
                       help="list of directories to check idl include")
-    parser.add_option("-o", "--overwrite", action="store_true",
-                      dest="overwrite", default=False,
-                      help="overwrite all generate files")
-    parser.add_option("--filenames", action="store_true",
-                      dest="filenames", default=False,
-                      help="print filenames to generate")
     parser.add_option("--interfaces", action="store_true",
                       dest="interfaces", default=False,
                       help="print interface names")
