@@ -114,8 +114,9 @@ macro(_rtmbuild2_genbridge_init)
       # add custom command for nexttime you invoke make
       if( ${PROJECT_NAME}_${_idl_name}_autogen_cpp_files )
         separate_arguments(tmp_idl_dirs UNIX_COMMAND "${idl_dirs}") # We need to use separate_arguments fot add_custom_target's arguments
+        separate_arguments(tmp_extra_package_paths UNIX_COMMAND "${extra_package_paths}") # We need to use separate_arguments fot add_custom_target's arguments
         add_custom_command(OUTPUT ${${PROJECT_NAME}_${_idl_name}_autogen_cpp_files}
-          COMMAND ${idl2srv_EXECUTABLE} -i ${_idl_file} --include-dirs="${tmp_idl_dirs}" --package-name=${PROJECT_NAME} --tmpdir=/tmp/idl2srv_${PROJECT_NAME}_${_idl_name}_${_rand_str} --include-msgsrv-package-paths="${extra_package_paths}"
+          COMMAND ${idl2srv_EXECUTABLE} -i ${_idl_file} --include-dirs="${tmp_idl_dirs}" --package-name=${PROJECT_NAME} --tmpdir=/tmp/idl2srv_${PROJECT_NAME}_${_idl_name}_${_rand_str} --include-msgsrv-package-paths="${tmp_extra_package_paths}"
           DEPENDS ${_idl_file})
       endif()
 
