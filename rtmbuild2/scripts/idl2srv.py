@@ -572,6 +572,9 @@ class ServiceVisitor (idlvisitor.AstVisitor):
         compsrc = open(tmpdir + '/' + module_name + '.cpp').read()
 
         port_name_src = """  nh = ros::NodeHandle("~");
+  int threads = 1;
+  nh.getParam("threads", threads);
+  spinner = ros::AsyncSpinner(threads);
   std::string port_name = "service0";
   nh.getParam("service_port", port_name);"""
         compsrc = addline(port_name_src, compsrc, 'Set service consumers to Ports')
@@ -579,7 +582,7 @@ class ServiceVisitor (idlvisitor.AstVisitor):
 
         compsrc += """
 RTC::ReturnCode_t %s::onExecute(RTC::UniqueId ec_id) {
-  ros::spinOnce();
+  //ros::spinOnce();
   return RTC::RTC_OK;
 }\n\n""" % module_name
 
@@ -587,6 +590,7 @@ RTC::ReturnCode_t %s::onExecute(RTC::UniqueId ec_id) {
         for i in range(len(operations)):
             name = operations[i].identifier()
             compsrc += '  _srv%d = nh.advertiseService("%s", &%s::%s, this);\n' % (i, name, module_name, name)
+        compsrc +="  spinner.start();\n"
         compsrc +="  return RTC::RTC_OK;\n}\n\n"""
 
         compsrc += "RTC::ReturnCode_t %s::onDeactivated(RTC::UniqueId ec_id) {\n" % module_name
@@ -594,6 +598,7 @@ RTC::ReturnCode_t %s::onExecute(RTC::UniqueId ec_id) {
             name = operations[i].identifier()
             srvinst = '  _srv%d.shutdown();' % i
             compsrc = addline(srvinst, compsrc, 'Unadvertise service')
+        compsrc +="  spinner.stop();\n"
         compsrc +="  return RTC::RTC_OK;\n}\n\n"""
 
         compsrc += convert_functions + self.convertFunctionCode(interface)
@@ -623,6 +628,7 @@ RTC::ReturnCode_t %s::onExecute(RTC::UniqueId ec_id) {
         compsrc = addline(srvfunc, compsrc, 'public:')
 
         defsrv = "  ros::NodeHandle nh;\n";
+        defsrv += "  ros::AsyncSpinner spinner = ros::AsyncSpinner(1);\n";
         defsrv += "  ros::ServiceServer " + ', '.join(['_srv%d' % i for i in range(len(operations))]) + ';'
         compsrc = addline(defsrv, compsrc, 'private:')
 
