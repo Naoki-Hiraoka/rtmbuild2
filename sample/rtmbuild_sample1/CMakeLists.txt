@@ -23,4 +23,4 @@ rtmbuild2_genbridge()
 
 add_executable(talker src/talker.cpp)
 target_link_libraries(talker ${catkin_LIBRARIES})
-
+add_dependencies(talker RTMBUILD2_${PROJECT_NAME}_genrpc) # wait for rtmbuild2_genidl
