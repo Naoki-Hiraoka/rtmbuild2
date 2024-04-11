@@ -749,7 +749,7 @@ if __name__ == '__main__':
     # preproccess and compile idl
     if options.idlpath:
         pathlist = options.idlpath.strip('"')
-        option = ' '.join(['-I'+d for d in filter(None, pathlist.split(' '))])
+        option = ' '.join(['-I'+d for d in [_f for _f in pathlist.split(' ') if _f]])
     else:
         option = ''
 
