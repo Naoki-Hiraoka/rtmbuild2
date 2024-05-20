@@ -16,6 +16,7 @@
   <depend>omniorb</depend>
   <depend>pkg-config</depend>
   <depend>std_msgs</depend>
+  <depend>roscpp</depend>
   <depend>cmake_modules</depend>
   <depend>openrtm_aist</depend>
   <depend>openrtm_aist_python</depend>

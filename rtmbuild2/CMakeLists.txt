@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.0.2)
 project(rtmbuild2)
 
 find_package(catkin REQUIRED COMPONENTS
+  roscpp
   std_msgs
   message_generation)
 
@@ -16,7 +17,7 @@ rtmbuild2_genidl()
 catkin_package(
   LIBRARIES ${${PROJECT_NAME}_IDLLIBRARY_DIRS}
   DEPENDS OMNIORB
-  CATKIN_DEPENDS message_generation std_msgs
+  CATKIN_DEPENDS message_generation std_msgs roscpp
   CFG_EXTRAS servicebridge2.cmake rtmbuild2.cmake
   )
 
